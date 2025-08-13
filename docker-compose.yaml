@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
 
   varnish:
@@ -14,7 +16,10 @@ services:
     ports:
       - "80:80"
     volumes:
-      - .docker/varnish/default.vcl:/etc/varnish/default.vcl:ro
+      - type: bind
+        source: ./.docker/varnish/default.vcl
+        target: /etc/varnish/default.vcl
+        read_only: true
 
   webserver:
     container_name: ${NAMESPACE}_webserver
@@ -33,23 +38,19 @@ services:
           - ${SHOPURI}
     volumes:
       - app_data:${WORKDIR_SERVER}:delegated
-      - .docker/nginx/config/nginx.conf:/etc/nginx/nginx.conf:ro
-      - .docker/nginx/config/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - type: bind
+        source: ./.docker/nginx/config/nginx.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true
+      - type: bind
+        source: ./.docker/nginx/config/default.conf
+        target: /etc/nginx/conf.d/default.conf
+        read_only: true
 
   php:
     container_name: ${NAMESPACE}_php
     image: osioaliu/php:${PHP_VERSION_SET}
     pull_policy: always
-    # build:
-    #   context: .docker/php
-    #   args:
-    #     - PHP_VERSION_SET=${PHP_VERSION_SET}
-    #     - USER_PHP=${USER_PHP}
-    #     - GROUP_PHP=${GROUP_PHP}
-    #     - ACPU_VERSION=${ACPU_VERSION}
-    #     - XDEBUG_VERSION=${XDEBUG_VERSION}
-    #     - FIXUID_VERSION=${FIXUID_VERSION}
-    #     - WORKDIR_SERVER=${FIXUID_VERSION}
     sysctls:
       net.core.somaxconn: 65536
     depends_on:
@@ -71,9 +72,18 @@ services:
       - db_socket:/var/run/mysqld
       - app_data:${WORKDIR_SERVER}:delegated
       - composer_cache:/home/www-data/.composer:delegated
-      - .docker/php/config/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini:ro
-      - .docker/php/config/php-ini-overrides.ini:/usr/local/etc/php/conf.d/php-ini-overrides.ini:ro
-      - .docker/php/config/zz-docker.conf:/usr/local/etc/php-fpm.d/zz-docker.conf:ro
+      - type: bind
+        source: ./.docker/php/config/xdebug.ini
+        target: /usr/local/etc/php/conf.d/xdebug.ini
+        read_only: true
+      - type: bind
+        source: ./.docker/php/config/php-ini-overrides.ini
+        target: /usr/local/etc/php/conf.d/php-ini-overrides.ini
+        read_only: true
+      - type: bind
+        source: ./.docker/php/config/zz-docker.conf
+        target: /usr/local/etc/php-fpm.d/zz-docker.conf
+        read_only: true
 
   db:
     container_name: ${NAMESPACE}_db
@@ -91,8 +101,14 @@ services:
     volumes:
       - db_socket:/var/run/mysqld
       - db_data:/var/lib/mysql/
-      - .docker/mysql/db_dumps:/docker-entrypoint-initdb.d
-      - .docker/mysql/config/my.cnf:/etc/mysql/my.cnf:ro
+      - type: bind
+        source: ./.docker/mysql/db_dumps
+        target: /docker-entrypoint-initdb.d
+        read_only: true
+      - type: bind
+        source: ./.docker/mysql/config/my.cnf
+        target: /etc/mysql/my.cnf
+        read_only: true
 
   redis_session:
     container_name: ${NAMESPACE}_redis_session
@@ -111,7 +127,10 @@ services:
       retries: 3
     volumes:
       - redis_socket_session:/run/redis/
-      - ./.docker/redis/redis.conf:/etc/redis/redis.conf:ro
+      - type: bind
+        source: ./.docker/redis/redis.conf
+        target: /etc/redis/redis.conf
+        read_only: true
 
   redis_cache:
     container_name: ${NAMESPACE}_redis_cache
@@ -130,7 +149,10 @@ services:
       retries: 3
     volumes:
       - redis_socket_cache:/run/redis/
-      - ./.docker/redis/redis.conf:/etc/redis/redis.conf:ro
+      - type: bind
+        source: ./.docker/redis/redis.conf
+        target: /etc/redis/redis.conf
+        read_only: true
 
   opensearch:
     container_name: ${NAMESPACE}_opensearch
@@ -187,4 +209,3 @@ volumes:
       type: none
       o: bind
       device: ${HOME}/.composer
-
